@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalitlarni Ochiq Taqsimlash — Diffie-Hellman Algoritmi</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a12;
+    --bg2: #0b1422;
+    --bg3: #0f1e32;
+    --panel: rgba(15, 30, 50, 0.85);
+    --border: rgba(0, 180, 255, 0.18);
+    --border2: rgba(0, 255, 200, 0.2);
+    --accent1: #00b4ff;
+    --accent2: #00ffcc;
+    --accent3: #ff6b35;
+    --alice: #4fc3f7;
+    --bob: #a5d6a7;
+    --eve: #ef9a9a;
+    --text: #e8f4fd;
+    --text2: #8ab4c8;
+    --math: #ffd54f;
+    --glow1: rgba(0, 180, 255, 0.15);
+    --glow2: rgba(0, 255, 200, 0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,100,180,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,200,150,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,180,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,180,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 60px 20px 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .subject-tag {
+    display: inline-block;
+    background: rgba(0,180,255,0.1);
+    border: 1px solid var(--accent1);
+    color: var(--accent1);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    padding: 6px 18px;
+    border-radius: 2px;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent1) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text2);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  /* ===== NAV TABS ===== */
+  .nav-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(5,10,18,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav-tabs::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    flex-shrink: 0;
+    padding: 16px 28px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text2);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+
+  .tab-btn:hover { color: var(--accent1); background: rgba(0,180,255,0.05); }
+  .tab-btn.active {
+    color: var(--accent1);
+    border-bottom-color: var(--accent1);
+    background: rgba(0,180,255,0.08);
+  }
+
+  /* ===== SECTIONS ===== */
+  .section {
+    display: none;
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  .section.active { display: block; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+    transition: border-color 0.3s;
+  }
+
+  .card:hover { border-color: rgba(0,180,255,0.35); }
+
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent1);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-title .icon { font-size: 1.2em; }
+
+  /* ===== MATH FORMULAS ===== */
+  .math-block {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255, 213, 79, 0.25);
+    border-left: 3px solid var(--math);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.05em;
+    color: var(--math);
+    overflow-x: auto;
+    line-height: 2;
+  }
+
+  .math-block .comment {
+    color: var(--text2);
+    font-size: 0.85em;
+    font-family: 'IBM Plex Sans', sans-serif;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .formula {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--math);
+    background: rgba(255,213,79,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.95em;
+  }
+
+  /* ===== INFO GRID ===== */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .info-item {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .info-label {
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 6px;
+  }
+
+  .info-value {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ===== SECTION TITLE ===== */
+  .section-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 28px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-heading .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--accent1);
+    border: 1px solid var(--accent1);
+    padding: 2px 10px;
+    border-radius: 2px;
+  }
+
+  /* ===== HIGHLIGHT BOX ===== */
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(0,180,255,0.08), rgba(0,255,200,0.05));
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  .warning-box {
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  .success-box {
+    background: rgba(0,255,150,0.06);
+    border: 1px solid rgba(0,255,150,0.25);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  /* ===== STEP FLOW ===== */
+  .steps-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .steps-flow::before {
+    content: '';
+    position: absolute;
+    left: 24px;
+    top: 40px;
+    bottom: 40px;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent1), var(--accent2));
+    opacity: 0.4;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 20px;
+    padding: 16px 0;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--bg);
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-content h4 {
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 6px;
+  }
+
+  /* ===== DH VISUAL ===== */
+  .dh-visual {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    align-items: start;
+    margin: 24px 0;
+  }
+
+  .person-card {
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .alice-card {
+    background: rgba(79, 195, 247, 0.08);
+    border: 1px solid rgba(79, 195, 247, 0.3);
+  }
+
+  .bob-card {
+    background: rgba(165, 214, 167, 0.08);
+    border: 1px solid rgba(165, 214, 167, 0.3);
+  }
+
+  .person-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .alice-card .person-name { color: var(--alice); }
+  .bob-card .person-name { color: var(--bob); }
+
+  .person-emoji { font-size: 2.5rem; margin-bottom: 8px; }
+
+  .person-data {
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    text-align: left;
+  }
+
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .data-key { color: var(--text2); }
+  .alice-data .data-val { color: var(--alice); }
+  .bob-data .data-val { color: var(--bob); }
+  .data-val { font-weight: 600; }
+
+  .channel-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 8px;
+  }
+
+  .channel-label {
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'JetBrains Mono', monospace;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  .arrow-down {
+    width: 2px;
+    flex: 1;
+    background: linear-gradient(to bottom, var(--accent1), var(--accent2));
+    opacity: 0.5;
+    position: relative;
+  }
+
+  .pub-badge {
+    background: rgba(0,180,255,0.15);
+    border: 1px solid var(--accent1);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75em;
+    color: var(--accent1);
+    white-space: nowrap;
+  }
+
+  /* ===== SIMULATOR ===== */
+  .sim-container {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 24px 0;
+  }
+
+  .sim-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+    color: var(--accent2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sim-title::before {
+    content: '▶';
+    color: var(--accent1);
+    font-size: 0.8em;
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .input-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .input-group input, .input-group select {
+    width: 100%;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .input-group input:focus, .input-group select:focus {
+    border-color: var(--accent1);
+    box-shadow: 0 0 0 2px rgba(0,180,255,0.1);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    border: none;
+    border-radius: 6px;
+    color: var(--bg);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,180,255,0.3);
+  }
+
+  .btn:active { transform: translateY(0); }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--accent1);
+    color: var(--accent1);
+  }
+
+  .btn-outline:hover {
+    background: rgba(0,180,255,0.1);
+    box-shadow: 0 4px 16px rgba(0,180,255,0.2);
+  }
+
+  /* ===== RESULT DISPLAY ===== */
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .result-card {
+    border-radius: 10px;
+    padding: 18px;
+    border: 1px solid;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+  }
+
+  .result-card.alice {
+    background: rgba(79, 195, 247, 0.06);
+    border-color: rgba(79, 195, 247, 0.3);
+  }
+
+  .result-card.bob {
+    background: rgba(165, 214, 167, 0.06);
+    border-color: rgba(165, 214, 167, 0.3);
+  }
+
+  .result-card.shared {
+    background: rgba(255, 213, 79, 0.06);
+    border-color: rgba(255, 213, 79, 0.3);
+    grid-column: 1 / -1;
+  }
+
+  .result-card h4 {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .result-card.alice h4 { color: var(--alice); }
+  .result-card.bob h4 { color: var(--bob); }
+  .result-card.shared h4 { color: var(--math); }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .result-key { color: var(--text2); font-size: 0.85em; }
+  .result-val { font-weight: 600; color: var(--text); word-break: break-all; text-align: right; }
+
+  .match-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+
+  .match-ok { background: rgba(0,255,150,0.15); color: #00e676; border: 1px solid rgba(0,255,150,0.3); }
+  .match-fail { background: rgba(255,80,80,0.15); color: #ff5252; border: 1px solid rgba(255,80,80,0.3); }
+
+  /* ===== LOG ===== */
+  .log-box {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82em;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.8;
+  }
+
+  .log-box::-webkit-scrollbar { width: 4px; }
+  .log-box::-webkit-scrollbar-track { background: transparent; }
+  .log-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-step { color: var(--text2); }
+  .log-pub { color: var(--accent1); }
+  .log-alice { color: var(--alice); }
+  .log-bob { color: var(--bob); }
+  .log-key { color: var(--math); font-weight: 700; }
+  .log-eve { color: var(--eve); }
+
+  /* ===== ANIMATION ===== */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,180,255,0.3); }
+    50% { box-shadow: 0 0 0 8px rgba(0,180,255,0); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .animate-in {
+    animation: fadeInUp 0.5s ease forwards;
+  }
+
+  .key-pulse {
+    animation: pulse 2s infinite;
+  }
+
+  /* ===== CANVAS ===== */
+  #dh-canvas {
+    width: 100%;
+    max-width: 700px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* ===== SECURITY ANALYSIS ===== */
+  .security-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .sec-card {
+    border-radius: 12px;
+    padding: 22px;
+  }
+
+  .sec-card.safe {
+    background: rgba(0,255,150,0.05);
+    border: 1px solid rgba(0,255,150,0.2);
+  }
+
+  .sec-card.danger {
+    background: rgba(255,80,80,0.05);
+    border: 1px solid rgba(255,80,80,0.2);
+  }
+
+  .sec-card.warn {
+    background: rgba(255,180,0,0.05);
+    border: 1px solid rgba(255,180,0,0.2);
+  }
+
+  .sec-card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .sec-card.safe h4 { color: #00e676; }
+  .sec-card.danger h4 { color: #ff5252; }
+  .sec-card.warn h4 { color: #ffca28; }
+
+  /* ===== PAINT MIX METAPHOR ===== */
+  .paint-demo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    flex-wrap: wrap;
+  }
+
+  .paint-box {
+    width: 70px;
+    height: 70px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+
+  .paint-arrow {
+    font-size: 1.5rem;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+
+  /* ===== COMPARISON TABLE ===== */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+    margin: 16px 0;
+  }
+
+  .comp-table th {
+    background: rgba(0,180,255,0.1);
+    color: var(--accent1);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    letter-spacing: 1px;
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+
+  .comp-table td {
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .comp-table tr:hover td { background: rgba(0,180,255,0.04); }
+
+  .tag-good { color: #00e676; font-weight: 600; }
+  .tag-bad { color: #ff5252; font-weight: 600; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 700px) {
+    .dh-visual { grid-template-columns: 1fr; }
+    .channel-col { flex-direction: row; }
+    .channel-label { writing-mode: horizontal-tb; }
+    .tab-btn { padding: 12px 16px; font-size: 12px; }
+  }
+
+  /* ===== DLP ANIMATION ===== */
+  .dlp-visual {
+    position: relative;
+    padding: 20px 0;
+  }
+
+  .num-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .num-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8em;
+    font-weight: 600;
+    transition: all 0.4s;
+    cursor: pointer;
+    border: 1px solid;
+    flex-shrink: 0;
+  }
+
+  .num-dot.normal {
+    background: rgba(0,180,255,0.08);
+    border-color: var(--border);
+    color: var(--text2);
+  }
+
+  .num-dot.base {
+    background: rgba(255,180,0,0.2);
+    border-color: var(--math);
+    color: var(--math);
+  }
+
+  .num-dot.result {
+    background: rgba(0,255,150,0.2);
+    border-color: var(--accent2);
+    color: var(--accent2);
+    transform: scale(1.2);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .badge-blue { background: rgba(0,180,255,0.15); color: var(--accent1); }
+  .badge-green { background: rgba(0,255,150,0.15); color: var(--accent2); }
+  .badge-yellow { background: rgba(255,213,79,0.15); color: var(--math); }
+  .badge-red { background: rgba(255,80,80,0.15); color: #ff6b6b; }
+
+  /* ===== QUIZ ===== */
+  .quiz-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px 18px;
+    margin: 8px 0;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.95em;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .quiz-option:hover { background: rgba(0,180,255,0.08); border-color: var(--accent1); }
+  .quiz-option.correct { background: rgba(0,255,150,0.1); border-color: var(--accent2); color: var(--accent2); }
+  .quiz-option.wrong { background: rgba(255,80,80,0.1); border-color: #ff5252; color: #ff5252; }
+
+  .quiz-feedback {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    display: none;
+  }
+
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct-fb { background: rgba(0,255,150,0.08); border: 1px solid rgba(0,255,150,0.25); color: #00e676; }
+  .quiz-feedback.wrong-fb { background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.25); color: #ff5252; }
+
+  .quiz-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8em;
+    color: var(--text2);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .quiz-question {
+    font-size: 1.05em;
+    font-weight: 500;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+
+  /* ===== PROGRESS ===== */
+  .progress-bar-wrap {
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    height: 4px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent1), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .score-display {
+    text-align: center;
+    padding: 30px;
+    border-radius: 12px;
+    background: rgba(0,180,255,0.05);
+    border: 1px solid var(--border);
+  }
+
+  .score-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Colors for painting demo */
+  .common-yellow { background: #f0c800; color: #000; }
+  .alice-secret { background: #e53935; color: #fff; }
+  .bob-secret { background: #1565c0; color: #fff; }
+  .alice-mix { background: #a04020; color: #fff; }
+  .bob-mix { background: #7b5e22; color: #fff; }
+  .final-mix { background: #5d3a6a; color: #fff; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="subject-tag">Axborotni himoyalash • Kriptografiya</div>
+  <h1>Kalitlarni Ochiq Taqsimlash</h1>
+  <p class="subtitle">Diffie–Hellman Protokoli • 1976 • Whitfield Diffie & Martin Hellman</p>
+</header>
+
+<!-- NAVIGATION -->
+<nav class="nav-tabs" id="mainNav">
+  <button class="tab-btn active" onclick="showTab('nazariya')">📖 Nazariya</button>
+  <button class="tab-btn" onclick="showTab('protokol')">🔄 Protokol</button>
+  <button class="tab-btn" onclick="showTab('matematika')">📐 Matematika</button>
+  <button class="tab-btn" onclick="showTab('simulator')">⚙️ Simulator</button>
+  <button class="tab-btn" onclick="showTab('xavfsizlik')">🛡️ Xavfsizlik</button>
+  <button class="tab-btn" onclick="showTab('quiz')">🎯 Test</button>
+</nav>
+
+<!-- ================================================
+     TAB 1: NAZARIYA
+     ================================================ -->
+<section class="section active" id="nazariya">
+  <h2 class="section-heading"><span class="num">01</span>Asosiy Tushunchalar</h2>
+
+  <!-- Muammo -->
+  <div class="card">
+    <div class="card-title"><span class="icon">❓</span>Muammo: Maxfiy kalit qanday uzatiladi?</div>
+    <p>Tasavvur qiling: <strong>Alisa</strong> va <strong>Bob</strong> xavfli kanal (internet) orqali xabar almashmoqchi. Ular xabarni simmetrik shifrlash bilan himoyalamoqchi — lekin buning uchun avval <em>umumiy maxfiy kalit</em> kerak.</p>
+    <div class="warning-box" style="margin-top:16px">
+      <strong style="color:#ff6b35">⚠️ Klassik muammo:</strong> Agar ular maxfiy kalitni ochiq kanalda yuborsalar — tajovuzkor (Eva) uni tutib olishi mumkin! Kalit xavfli yerda uzatilsa — butun tizim xavf ostida.
+    </div>
+    <p style="margin-top:14px">Diffie–Hellman protokoli 1976-yilda bu muammoni hal qildi: <strong>ochiq kanalda xavfsiz tarzda umumiy maxfiy kalit kelishib olish</strong>.</p>
+  </div>
+
+  <!-- Bo'yoq metaforasi -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🎨</span>Bo'yoq Metaforasi — Intuitsiya</div>
+    <p>Diffie-Hellman g'oyasini tushunish uchun eng mashhur misol — <strong>bo'yoqlarni aralashtiruv</strong>:</p>
+
+    <div class="paint-demo">
+      <div>
+        <div class="paint-box common-yellow" style="width:80px;height:80px">Umumiy<br>sariq</div>
+        <div style="text-align:center;font-size:11px;margin-top:6px;color:var(--text2)">Ochiq</div>
+      </div>
+      <div class="paint-arrow">→</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="display:flex;gap:12px">
+          <div>
+            <div class="paint-box alice-mix">Alisa<br>aralashtirdi</div>
+            <div style="text-align:center;font-size:10px;margin-top:4px;color:var(--alice)">sariq + qizil</div>
+          </div>
+          <div>
+            <div class="paint-box bob-mix">Bob<br>aralashtirdi</div>
+            <div style="text-align:center;font-size:10px;margin-top:4px;color:var(--bob)">sariq + ko'k</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text2)">↓ almashinadi (ochiq)</div>
+        <div style="display:flex;gap:12px">
+          <div>
+            <div class="paint-box bob-mix">Bob miks</div>
+            <div style="text-align:center;font-size:10px;margin-top:4px;color:var(--alice)">+ Alisa sirri</div>
+          </div>
+          <div>
+            <div class="paint-box alice-mix">Alisa miks</div>
+            <div style="text-align:center;font-size:10px;margin-top:4px;color:var(--bob)">+ Bob sirri</div>
+          </div>
+        </div>
+      </div>
+      <div class="paint-arrow">→</div>
+      <div>
+        <div class="paint-box final-mix" style="width:80px;height:80px;font-size:10px">Bir xil<br>umumiy<br>kalit!</div>
+        <div style="text-align:center;font-size:11px;margin-top:6px;color:var(--math)">Maxfiy!</div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <p>🔑 <strong>Kalit g'oya:</strong> Hech kim ikkala maxfiy bo'yoqni bir vaqtda bilmaydi. Eva faqat aralashtirilgan bo'yoqlarni ko'radi — lekin ularni <em>"ajratish"</em> juda qiyin!</p>
+    </div>
+  </div>
+
+  <!-- Tarix -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📜</span>Tarixiy Ahamiyati</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Muallif</div>
+        <div class="info-value">Whitfield Diffie, Martin Hellman</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Yil</div>
+        <div class="info-value">1976</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Maqola</div>
+        <div class="info-value">"New Directions in Cryptography"</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Mukofot</div>
+        <div class="info-value">Turing Award (2015)</div>
+      </div>
+    </div>
+    <p style="margin-top:14px">DH protokoli <strong>ochiq kalitli kriptografiyaning asosi</strong> hisoblanadi. Undan avval barcha kriptografik tizimlar simmetrik edi — ya'ni ikkala tomon bir xil maxfiy kalitni oldindan almashinishi kerak edi. DH bu muammoni butunlay hal qildi.</p>
+  </div>
+</section>
+
+<!-- ================================================
+     TAB 2: PROTOKOL
+     ================================================ -->
+<section class="section" id="protokol">
+  <h2 class="section-heading"><span class="num">02</span>DH Protokolining Qadamlari</h2>
+
+  <!-- Visual diagram -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🔄</span>Protokol Diagrammasi</div>
+
+    <div class="dh-visual">
+      <!-- Alice -->
+      <div class="person-card alice-card">
+        <div class="person-emoji">👩</div>
+        <div class="person-name">Alisa</div>
+        <div class="person-data alice-data">
+          <div class="data-row"><span class="data-key">a (sir)</span><span class="data-val">↗ tasodifiy</span></div>
+          <div class="data-row"><span class="data-key">A = gᵃ mod p</span><span class="data-val">↗ hisoblash</span></div>
+          <div class="data-row"><span class="data-key">K = Bᵃ mod p</span><span class="data-val">↗ yakuniy kalit</span></div>
+        </div>
+      </div>
+
+      <!-- Channel -->
+      <div class="channel-col">
+        <span class="pub-badge">p, g — ochiq</span>
+        <div style="height:20px; width:2px; background:var(--border); margin: 4px auto;"></div>
+        <div style="display:flex; gap:6px; align-items:center">
+          <span style="color:var(--alice);font-size:11px;font-family:monospace">A →</span>
+        </div>
+        <div style="height:10px; width:2px; background:var(--border); margin: 4px auto;"></div>
+        <div style="display:flex; gap:6px; align-items:center">
+          <span style="color:var(--bob);font-size:11px;font-family:monospace">← B</span>
+        </div>
+        <div style="height:20px; width:2px; background:var(--border); margin: 4px auto;"></div>
+        <span class="pub-badge" style="border-color:rgba(0,255,200,0.4);color:var(--accent2)">K = umumiy</span>
+      </div>
+
+      <!-- Bob -->
+      <div class="person-card bob-card">
+        <div class="person-emoji">👨</div>
+        <div class="person-name">Bob</div>
+        <div class="person-data bob-data">
+          <div class="data-row"><span class="data-key">b (sir)</span><span class="data-val">↗ tasodifiy</span></div>
+          <div class="data-row"><span class="data-key">B = gᵇ mod p</span><span class="data-val">↗ hisoblash</span></div>
+          <div class="data-row"><span class="data-key">K = Aᵇ mod p</span><span class="data-val">↗ yakuniy kalit</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span>Bosqichma-Bosqich Tavsif</div>
+
+    <div class="steps-flow">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Umumiy parametrlarni tanlash</h4>
+          <p>Alisa va Bob ochiq kanalda ikki parametrni kelishib oladilar:</p>
+          <div class="math-block">
+            <div>p — katta tub son (masalan: p = 23)</div>
+            <div>g — primitiv ildiz mod p (masalan: g = 5)</div>
+            <span class="comment">// p va g hamma uchun ochiq — sirmas!</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Maxfiy kalitlarni tanlash</h4>
+          <p>Har biri o'z sir kalitini <strong>tasodifiy</strong> tanlaydi — va <em>hech kimga aytmaydi</em>:</p>
+          <div class="math-block">
+            <div style="color:var(--alice)">Alisa: a = 6  &nbsp;← sir, faqat Alisaga ma'lum</div>
+            <div style="color:var(--bob)">Bob:   b = 15 ← sir, faqat Bobga ma'lum</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Ochiq kalitlarni hisoblash</h4>
+          <p>Har biri o'z ochiq kalitini hisoblaydi va sherigiga yuboradi:</p>
+          <div class="math-block">
+            <div style="color:var(--alice)">A = g<sup>a</sup> mod p = 5<sup>6</sup> mod 23 = 8</div>
+            <div style="color:var(--bob)">B = g<sup>b</sup> mod p = 5<sup>15</sup> mod 23 = 19</div>
+            <span class="comment">// A va B ochiq kanalda uzatiladi — Eva ham ko'radi!</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Umumiy maxfiy kalitni hisoblash</h4>
+          <p>Har biri sherigining ochiq kaliti va o'z sir kalitidan umumiy kalitni hisoblaydi:</p>
+          <div class="math-block">
+            <div style="color:var(--alice)">Alisa: K = B<sup>a</sup> mod p = 19<sup>6</sup> mod 23 = 2</div>
+            <div style="color:var(--bob)">Bob:   K = A<sup>b</sup> mod p = 8<sup>15</sup> mod 23 = 2</div>
+            <span class="comment">// Ikkalasi ham bir xil K = 2 ni oldi! Muvaffaqiyat!</span>
+          </div>
+          <div class="success-box" style="margin-top:12px">
+            ✅ <strong>Natija:</strong> Alisa va Bob uchun K = 2 — bu ularning umumiy maxfiy kaliti. Eva faqat p, g, A, B larni biladi — lekin K ni topa olmaydi!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nega ishlaydi? -->
+  <div class="card">
+    <div class="card-title"><span class="icon">✨</span>Nima Uchun Ishlaydi?</div>
+    <p>Matematikaning sehri: ikkala hisob bir xil natijaga olib keladi — chunki:</p>
+    <div class="math-block">
+      K = B<sup>a</sup> mod p = (g<sup>b</sup>)<sup>a</sup> mod p = g<sup>ab</sup> mod p
+      <br>
+      K = A<sup>b</sup> mod p = (g<sup>a</sup>)<sup>b</sup> mod p = g<sup>ab</sup> mod p
+      <br>
+      <span class="comment">// Darajalar kommutativ: (gᵃ)ᵇ = (gᵇ)ᵃ = g^(ab)</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     TAB 3: MATEMATIKA
+     ================================================ -->
+<section class="section" id="matematika">
+  <h2 class="section-heading"><span class="num">03</span>Matematik Asoslar</h2>
+
+  <!-- Modulli arifmetika -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🔢</span>Modulli Arifmetika</div>
+    <p>DH ning asosi — <strong>modulli arifmetika</strong>. Amal: <span class="formula">a mod n</span> — bu a ni n ga bo'lgandagi qoldiq.</p>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Misol</div>
+        <div class="info-value" style="font-family:monospace">17 mod 5 = 2</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Xususiyat</div>
+        <div class="info-value" style="font-family:monospace">(a·b) mod n</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Tub son</div>
+        <div class="info-value" style="font-family:monospace">p — prime</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Primitiv ildiz</div>
+        <div class="info-value" style="font-family:monospace">g — generator</div>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top:16px">
+      <p><strong>Muhim xususiyat:</strong> p tub son bo'lsa, <span class="formula">ℤₚ* = {1, 2, ..., p-1}</span> multiplikativ guruh hosil qiladi. Agar g primitiv ildiz bo'lsa, uning darajalari bu guruhning <strong>barcha</strong> elementlarini beradi.</p>
+    </div>
+  </div>
+
+  <!-- Diskret logarifm -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🔐</span>Diskret Logarifm Muammosi (DLP)</div>
+    <p>DH xavfsizligi <strong>diskret logarifm</strong> ni topishning qiyinligiga tayanadi:</p>
+
+    <div class="math-block">
+      Berilgan: g, A, p
+      <br>
+      Topish: a — bu yerda g<sup>a</sup> ≡ A (mod p)
+      <br>
+      <span class="comment">// Oddiy ko'rinadi, lekin p katta bo'lsa — hisoblash imkonsiz darajada qiyin!</span>
+    </div>
+
+    <div class="dlp-visual">
+      <p style="color:var(--text2);font-size:0.9em;margin-bottom:8px">p = 23, g = 5 uchun quvvatlar siklini ko'ring:</p>
+      <div class="num-line" id="numLine">
+        <!-- JS bilan to'ldiriladi -->
+      </div>
+      <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap">
+        <div><span class="num-dot base" style="display:inline-flex;width:24px;height:24px;border-radius:50%;font-size:9px;border:1px solid var(--math)"></span> <span style="font-size:12px">Asos (g=5)</span></div>
+        <div><span class="num-dot result" style="display:inline-flex;width:24px;height:24px;border-radius:50%;font-size:9px;border:1px solid var(--accent2)"></span> <span style="font-size:12px">Tanlangan natija</span></div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div class="input-group" style="flex:1;min-width:150px">
+          <label>g^x mod 23 — x ni kiriting:</label>
+          <input type="number" id="dlpX" value="6" min="1" max="22" placeholder="1-22">
+        </div>
+        <button class="btn btn-outline" onclick="calcDLP()" style="margin-top:18px">Hisoblash</button>
+      </div>
+      <div id="dlpResult" class="math-block" style="margin-top:12px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- Ferma kichik teoremasi -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📏</span>Ferma Kichik Teoremasi</div>
+    <p>DH ning matematik asoslaridan biri — Ferma teoremasi:</p>
+    <div class="math-block">
+      Agar p — tub son va gcd(a, p) = 1 bo'lsa:
+      <br>
+      a<sup>p-1</sup> ≡ 1 (mod p)
+      <br>
+      <span class="comment">// Yoki ekvivalent: a^p ≡ a (mod p)</span>
+    </div>
+    <p style="margin-top:12px">Bu teorema DH hisob-kitoblarida <strong>modulli inversiya</strong> va <strong>siklik guruh</strong> xususiyatlarini ta'minlaydi.</p>
+  </div>
+
+  <!-- Formal ta'rif -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📐</span>Formal Protokol Ta'rifi</div>
+
+    <div class="math-block">
+      <strong>Umumiy parametrlar:</strong><br>
+      &nbsp;&nbsp;• p — katta tub son (≥ 2048 bit hozirgi standart)<br>
+      &nbsp;&nbsp;• g — p ning primitiv ildizi (generator)<br><br>
+
+      <strong>Alisa:</strong><br>
+      &nbsp;&nbsp;1. a ∈ᴿ {2, ..., p-2} &nbsp;← tasodifiy tanlash<br>
+      &nbsp;&nbsp;2. A = g<sup>a</sup> mod p &nbsp;&nbsp;&nbsp;&nbsp;← ochiq kalit<br>
+      &nbsp;&nbsp;3. A ni Bobga yuborish<br>
+      &nbsp;&nbsp;4. K = B<sup>a</sup> mod p &nbsp;&nbsp;&nbsp;&nbsp;← umumiy kalit<br><br>
+
+      <strong>Bob:</strong><br>
+      &nbsp;&nbsp;1. b ∈ᴿ {2, ..., p-2} &nbsp;← tasodifiy tanlash<br>
+      &nbsp;&nbsp;2. B = g<sup>b</sup> mod p &nbsp;&nbsp;&nbsp;&nbsp;← ochiq kalit<br>
+      &nbsp;&nbsp;3. B ni Alisaga yuborish<br>
+      &nbsp;&nbsp;4. K = A<sup>b</sup> mod p &nbsp;&nbsp;&nbsp;&nbsp;← umumiy kalit<br><br>
+
+      <strong>To'g'rilik:</strong><br>
+      &nbsp;&nbsp;B<sup>a</sup> = (g<sup>b</sup>)<sup>a</sup> = g<sup>ab</sup> = (g<sup>a</sup>)<sup>b</sup> = A<sup>b</sup> (mod p) ✓
+    </div>
+  </div>
+
+  <!-- El-Gamal bilan taqqoslash -->
+  <div class="card">
+    <div class="card-title"><span class="icon">⚖️</span>DH vs El-Gamal</div>
+    <p>Siz El-Gamal algoritmini o'rgandingiz. DH bilan asosiy farqlar:</p>
+    <table class="comp-table">
+      <tr>
+        <th>Xususiyat</th>
+        <th>Diffie-Hellman</th>
+        <th>El-Gamal</th>
+      </tr>
+      <tr>
+        <td>Maqsad</td>
+        <td><span class="tag-good">Kalit almashinuvi</span></td>
+        <td><span class="tag-good">Shifrlash + imzo</span></td>
+      </tr>
+      <tr>
+        <td>Matematik asos</td>
+        <td>DLP (diskret log)</td>
+        <td>DLP + DH muammosi</td>
+      </tr>
+      <tr>
+        <td>Natija</td>
+        <td>Umumiy kalit K</td>
+        <td>Shifrlangan xabar</td>
+      </tr>
+      <tr>
+        <td>Kalit holati</td>
+        <td>Har sessiyada yangi</td>
+        <td>Statik yoki sessiya</td>
+      </tr>
+      <tr>
+        <td>Autentifikatsiya</td>
+        <td><span class="tag-bad">Yo'q (sof DH)</span></td>
+        <td><span class="tag-good">Raqamli imzo orqali</span></td>
+      </tr>
+      <tr>
+        <td>Zamonaviy versiya</td>
+        <td>ECDH (elliptik)</td>
+        <td>ECEG (elliptik)</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- ================================================
+     TAB 4: SIMULATOR
+     ================================================ -->
+<section class="section" id="simulator">
+  <h2 class="section-heading"><span class="num">04</span>Interaktiv Simulator</h2>
+
+  <div class="sim-container">
+    <div class="sim-title">Diffie-Hellman Protokolini Bajarish</div>
+
+    <div class="input-row">
+      <div class="input-group">
+        <label>p — tub son</label>
+        <input type="number" id="simP" value="23" min="5" max="9999">
+      </div>
+      <div class="input-group">
+        <label>g — asos (generator)</label>
+        <input type="number" id="simG" value="5" min="2" max="100">
+      </div>
+      <div class="input-group">
+        <label>a — Alisa sir kaliti</label>
+        <input type="number" id="simA" value="6" min="2" max="9998">
+      </div>
+      <div class="input-group">
+        <label>b — Bob sir kaliti</label>
+        <input type="number" id="simB" value="15" min="2" max="9998">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn" onclick="runSimulator()">▶ Protokolni Ishga Tushirish</button>
+      <button class="btn btn-outline" onclick="randomizeInputs()">🎲 Tasodifiy Qiymatlar</button>
+    </div>
+
+    <div id="simResults" style="display:none;margin-top:24px">
+      <div class="result-grid" id="resultGrid"></div>
+      <div class="log-box" id="simLog"></div>
+    </div>
+  </div>
+
+  <!-- Eva hujumi -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🕵️</span>Eva (Tajovuzkor) Nimani Ko'radi?</div>
+    <p>Eva ochiq kanalda <strong>faqat quyidagilarni</strong> ko'rishi mumkin:</p>
+    <div class="math-block" id="evaView">
+      p, g, A, B — ochiq
+      <span class="comment">// Lekin a va b — hech qachon uzatilmaydi!</span>
+    </div>
+    <p style="margin-top:12px">Eva uchun K ni topish — bu diskret logarifm muammosini hal qilishni talab qiladi. Katta p uchun bu <strong>hozirgi kompyuterlar uchun imkonsiz</strong>.</p>
+  </div>
+
+  <!-- Canvas vizualizatsiya -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🎭</span>Vizual Tasvir</div>
+    <canvas id="dh-canvas" height="300"></canvas>
+    <div style="margin-top:12px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:12px;font-family:monospace">
+      <span style="color:var(--alice)">● Alisa</span>
+      <span style="color:var(--bob)">● Bob</span>
+      <span style="color:var(--accent1)">● Ochiq</span>
+      <span style="color:var(--math)">● Umumiy kalit</span>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn btn-outline" onclick="animateProtocol()">▶ Animatsiyani Ko'rsatish</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     TAB 5: XAVFSIZLIK
+     ================================================ -->
+<section class="section" id="xavfsizlik">
+  <h2 class="section-heading"><span class="num">05</span>Xavfsizlik Tahlili</h2>
+
+  <div class="security-grid">
+    <div class="sec-card safe">
+      <h4>✅ Kuchli tomonlar</h4>
+      <ul style="padding-left:18px;line-height:2.2">
+        <li>DLP qiyinligiga asoslangan</li>
+        <li>Maxfiy kalit kanalda uzatilmaydi</li>
+        <li>Oldinga maxfiylik (PFS)</li>
+        <li>Har sessiyada yangi kalit</li>
+        <li>Matematik isbotlangan</li>
+      </ul>
+    </div>
+
+    <div class="sec-card danger">
+      <h4>⚠️ Zaif tomonlar</h4>
+      <ul style="padding-left:18px;line-height:2.2">
+        <li>O'rta hujum (MITM) ga zaif</li>
+        <li>Autentifikatsiya yo'q</li>
+        <li>Kichik p zaif</li>
+        <li>Logjam hujumi</li>
+        <li>Kvant kompyuterlariga zaif</li>
+      </ul>
+    </div>
+
+    <div class="sec-card warn">
+      <h4>🔧 Tavsiyalar</h4>
+      <ul style="padding-left:18px;line-height:2.2">
+        <li>p ≥ 2048 bit ishlatish</li>
+        <li>Sertifikat bilan autentifikatsiya</li>
+        <li>ECDH (elliptik egri) afzal</li>
+        <li>Har sessiyada yangi kalit</li>
+        <li>Post-kvant algoritmlar o'rganish</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- MITM hujumi -->
+  <div class="card" style="margin-top:24px">
+    <div class="card-title"><span class="icon">🎭</span>O'rta Odam Hujumi (MITM)</div>
+    <p>Sof DH ning eng katta kamchiligi — <strong>autentifikatsiya yo'qligi</strong>. Eva o'rtaga kirib, ikki tomonning ham kalitlarini almashtirishi mumkin:</p>
+
+    <div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:20px;margin:16px 0;font-family:monospace;font-size:0.85em;line-height:2">
+      <div style="color:var(--alice)">Alisa → A (ochiq) →</div>
+      <div style="color:var(--eve)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Eva tutib oladi! A' yuboradi →</div>
+      <div style="color:var(--bob)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bob A' ni qabul qiladi</div>
+      <div style="color:var(--bob)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bob → B (ochiq) →</div>
+      <div style="color:var(--eve)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Eva tutib oladi! B' yuboradi →</div>
+      <div style="color:var(--alice)">Alisa B' ni qabul qiladi</div>
+      <br>
+      <div style="color:var(--eve)">Natija: Eva Alisa va Bob bilan alohida kalitlarga ega!</div>
+      <div style="color:var(--eve)">Eva barcha xabarlarni o'qiy oladi va o'zgartirishi mumkin.</div>
+    </div>
+
+    <div class="warning-box">
+      <strong>🛡️ Himoya:</strong> MITM dan himoya uchun <strong>sertifikatlar (PKI)</strong>, <strong>raqamli imzolar</strong> yoki <strong>autentifikatsiyalangan DH (STS protokoli)</strong> ishlatiladi. TLS protokoli DH ni sertifikat bilan birlashtiradi.
+    </div>
+  </div>
+
+  <!-- Parametrlar -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📊</span>Xavfsiz Parametrlar</div>
+    <table class="comp-table">
+      <tr>
+        <th>p o'lchami</th>
+        <th>Xavfsizlik darajasi</th>
+        <th>Holat</th>
+        <th>Qo'llanish</th>
+      </tr>
+      <tr>
+        <td>512 bit</td>
+        <td>~56 bit</td>
+        <td><span class="tag-bad">XAVFLI</span></td>
+        <td>Tavsiya etilmaydi</td>
+      </tr>
+      <tr>
+        <td>1024 bit</td>
+        <td>~80 bit</td>
+        <td><span class="tag-bad">ZAIF</span></td>
+        <td>Eski tizimlar</td>
+      </tr>
+      <tr>
+        <td>2048 bit</td>
+        <td>~112 bit</td>
+        <td><span class="tag-good">QABUL</span></td>
+        <td>Hozirgi minimum</td>
+      </tr>
+      <tr>
+        <td>3072 bit</td>
+        <td>~128 bit</td>
+        <td><span class="tag-good">YAXSHI</span></td>
+        <td>Zamonaviy tavsiya</td>
+      </tr>
+      <tr>
+        <td>ECDH-256</td>
+        <td>~128 bit</td>
+        <td><span class="tag-good">OPTIMAL</span></td>
+        <td>TLS 1.3 standart</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- TLS -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🌐</span>Amaliy Qo'llanishi</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">TLS/SSL (HTTPS)</div>
+        <div class="info-value">DHE / ECDHE</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">SSH protokoli</div>
+        <div class="info-value">DH kalit almashinuvi</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">IPsec / VPN</div>
+        <div class="info-value">IKE protokoli</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Signal / WhatsApp</div>
+        <div class="info-value">X3DH (Extended DH)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     TAB 6: QUIZ
+     ================================================ -->
+<section class="section" id="quiz">
+  <h2 class="section-heading"><span class="num">06</span>Bilimlarni Tekshirish</h2>
+
+  <div id="quizContainer">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="quizProgress" style="width:0%"></div>
+    </div>
+    <div id="quizContent"></div>
+  </div>
+
+  <div id="quizScore" style="display:none" class="score-display">
+    <div class="score-num" id="scoreNum">0/7</div>
+    <div style="font-size:1.2rem;margin:8px 0;font-weight:600" id="scoreMsg"></div>
+    <p style="color:var(--text2);margin-bottom:20px" id="scoreDetail"></p>
+    <button class="btn" onclick="restartQuiz()">🔄 Qayta Boshlash</button>
+  </div>
+</section>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+// ===== TAB NAVIGATION =====
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = ['nazariya','protokol','matematika','simulator','xavfsizlik','quiz'].indexOf(id);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (id === 'simulator') setTimeout(drawCanvas, 100);
+  if (id === 'matematika') setTimeout(buildNumLine, 100);
+}
+
+// ===== MODULAR EXPONENTIATION =====
+function modPow(base, exp, mod) {
+  if (mod === 1n) return 0n;
+  let result = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) result = (result * base) % mod;
+    exp = exp / 2n;
+    base = (base * base) % mod;
+  }
+  return result;
+}
+
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n < 4) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+  }
+  return true;
+}
+
+// ===== SIMULATOR =====
+function runSimulator() {
+  const p = parseInt(document.getElementById('simP').value);
+  const g = parseInt(document.getElementById('simG').value);
+  const a = parseInt(document.getElementById('simA').value);
+  const b = parseInt(document.getElementById('simB').value);
+
+  if (!isPrime(p)) {
+    alert('p tub son bo\'lishi kerak! Iltimos, boshqa qiymat kiriting.');
+    return;
+  }
+  if (a >= p || b >= p) {
+    alert('Sir kalitlar p dan kichik bo\'lishi kerak!');
+    return;
+  }
+
+  const pb = BigInt(p), gb = BigInt(g), ab = BigInt(a), bb = BigInt(b);
+  const A = modPow(gb, ab, pb);
+  const B = modPow(gb, bb, pb);
+  const KA = modPow(B, ab, pb);
+  const KB = modPow(A, bb, pb);
+  const match = KA === KB;
+
+  // Update Eva view
+  document.getElementById('evaView').innerHTML = `p = ${p}, g = ${g}, A = ${A}, B = ${B}
+<span class="comment">// Eva a = ? va b = ? ni bilmaydi. K = ? ni topish uchun DLP hal qilishi kerak.</span>`;
+
+  // Build result grid
+  const rg = document.getElementById('resultGrid');
+  rg.innerHTML = `
+    <div class="result-card alice">
+      <h4>👩 Alisa</h4>
+      <div class="result-row"><span class="result-key">Sir kalit a</span><span class="result-val" style="color:var(--alice)">${a}</span></div>
+      <div class="result-row"><span class="result-key">Ochiq A = g^a mod p</span><span class="result-val">${A}</span></div>
+      <div class="result-row"><span class="result-key">K = B^a mod p</span><span class="result-val" style="color:var(--math)">${KA}</span></div>
+    </div>
+    <div class="result-card bob">
+      <h4>👨 Bob</h4>
+      <div class="result-row"><span class="result-key">Sir kalit b</span><span class="result-val" style="color:var(--bob)">${b}</span></div>
+      <div class="result-row"><span class="result-key">Ochiq B = g^b mod p</span><span class="result-val">${B}</span></div>
+      <div class="result-row"><span class="result-key">K = A^b mod p</span><span class="result-val" style="color:var(--math)">${KB}</span></div>
+    </div>
+    <div class="result-card shared">
+      <h4>🔑 Umumiy Kalit Natijasi</h4>
+      <div class="result-row"><span class="result-key">Alisa hisoblagan K</span><span class="result-val" style="color:var(--math);font-size:1.2em">${KA}</span></div>
+      <div class="result-row"><span class="result-key">Bob hisoblagan K</span><span class="result-val" style="color:var(--math);font-size:1.2em">${KB}</span></div>
+      <div style="margin-top:10px">
+        <span class="match-badge ${match ? 'match-ok' : 'match-fail'}">
+          ${match ? '✅ Mos keldi! Umumiy kalit = ' + KA : '❌ Mos kelmadi! Parametrlarni tekshiring.'}
+        </span>
+      </div>
+    </div>`;
+
+  // Build log
+  const log = document.getElementById('simLog');
+  log.innerHTML = `<span class="log-step">[BOSHLASH]</span> Parametrlar: p=${p}, g=${g}<br>
+<span class="log-alice">[ALISA]</span> Sir kalit tanladi: a = ${a}<br>
+<span class="log-bob">[BOB]</span> Sir kalit tanladi: b = ${b}<br>
+<span class="log-alice">[ALISA]</span> Ochiq kalit: A = ${g}^${a} mod ${p} = <strong>${A}</strong><br>
+<span class="log-bob">[BOB]</span> Ochiq kalit: B = ${g}^${b} mod ${p} = <strong>${B}</strong><br>
+<span class="log-pub">[KANAL]</span> Alisa → Bob: A = ${A}<br>
+<span class="log-pub">[KANAL]</span> Bob → Alisa: B = ${B}<br>
+<span class="log-eve">[EVA]</span> Ko'rdi: p=${p}, g=${g}, A=${A}, B=${B} ← lekin kalitni topa olmaydi!<br>
+<span class="log-alice">[ALISA]</span> K = ${B}^${a} mod ${p} = <strong class="log-key">${KA}</strong><br>
+<span class="log-bob">[BOB]</span> K = ${A}^${b} mod ${p} = <strong class="log-key">${KB}</strong><br>
+<span class="log-key">[NATIJA]</span> Umumiy kalit = ${KA} ${match ? '✅ MUVAFFAQIYATLI' : '❌ XATO'}`;
+
+  document.getElementById('simResults').style.display = 'block';
+  drawCanvas(p, g, a, b, Number(A), Number(B), Number(KA));
+}
+
+function randomizeInputs() {
+  const primes = [11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97];
+  const p = primes[Math.floor(Math.random() * primes.length)];
+  const g = 2 + Math.floor(Math.random() * 5);
+  const a = 2 + Math.floor(Math.random() * (p - 3));
+  const b = 2 + Math.floor(Math.random() * (p - 3));
+  document.getElementById('simP').value = p;
+  document.getElementById('simG').value = g;
+  document.getElementById('simA').value = a;
+  document.getElementById('simB').value = b;
+}
+
+// ===== CANVAS =====
+function drawCanvas(p, g, a, b, A, B, K) {
+  const canvas = document.getElementById('dh-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio || 700;
+  canvas.height = 300 * (window.devicePixelRatio || 1);
+  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const W = canvas.offsetWidth || 700, H = 300;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = 'rgba(5,10,18,0.95)';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(0,180,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  if (!p) return;
+
+  const alice = {x: 100, y: 150};
+  const bob = {x: W-100, y: 150};
+  const mid = {x: W/2, y: 100};
+
+  // Draw persons
+  function drawPerson(x, y, color, label) {
+    ctx.beginPath();
+    ctx.arc(x, y, 30, 0, Math.PI*2);
+    ctx.fillStyle = color + '22';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 14px IBM Plex Sans';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, y + 5);
+  }
+
+  drawPerson(alice.x, alice.y, '#4fc3f7', 'Alisa');
+  drawPerson(bob.x, bob.y, '#a5d6a7', 'Bob');
+
+  // Draw arrows and labels
+  function drawArrow(x1, y1, x2, y2, color, label) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5,3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Arrowhead
+    const angle = Math.atan2(y2-y1, x2-x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 10*Math.cos(angle-0.4), y2 - 10*Math.sin(angle-0.4));
+    ctx.lineTo(x2 - 10*Math.cos(angle+0.4), y2 - 10*Math.sin(angle+0.4));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    // Label
+    ctx.fillStyle = color;
+    ctx.font = '12px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, (x1+x2)/2, (y1+y2)/2 - 8);
+  }
+
+  drawArrow(alice.x+32, alice.y-10, W/2-20, 80, '#00b4ff', `A = ${A}`);
+  drawArrow(W/2+20, 80, bob.x-32, bob.y-10, '#00b4ff', '→');
+  drawArrow(bob.x-32, bob.y+10, W/2+20, H-70, '#a5d6a7', `B = ${B}`);
+  drawArrow(W/2-20, H-70, alice.x+32, alice.y+10, '#a5d6a7', '→');
+
+  // Common key
+  ctx.beginPath();
+  ctx.arc(W/2, H/2, 22, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,213,79,0.15)';
+  ctx.fill();
+  ctx.strokeStyle = '#ffd54f';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffd54f';
+  ctx.font = 'bold 11px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText(`K=${K}`, W/2, H/2+4);
+
+  // Public params label
+  ctx.fillStyle = 'rgba(0,180,255,0.8)';
+  ctx.font = '11px JetBrains Mono';
+  ctx.fillText(`p=${p}, g=${g}`, W/2, 24);
+}
+
+// ===== DLP VISUALIZER =====
+function buildNumLine() {
+  const p = 23, g = 5;
+  const container = document.getElementById('numLine');
+  if (!container) return;
+  container.innerHTML = '';
+  for (let i = 1; i < p; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'num-dot ' + (i === g ? 'base' : 'normal');
+    dot.textContent = i;
+    dot.title = `g^? mod ${p} = ${i}`;
+    dot.onclick = () => highlightPow(i);
+    container.appendChild(dot);
+  }
+}
+
+function highlightPow(target) {
+  const p = 23, g = 5;
+  const dots = document.querySelectorAll('.num-dot');
+  dots.forEach((d, i) => {
+    d.className = 'num-dot ' + ((i+1) === g ? 'base' : 'normal');
+    if (i+1 === target) d.className = 'num-dot result';
+  });
+  // Find x
+  for (let x = 1; x < p; x++) {
+    if (Number(modPow(BigInt(g), BigInt(x), BigInt(p))) === target) {
+      document.getElementById('dlpX').value = x;
+      const res = document.getElementById('dlpResult');
+      res.style.display = 'block';
+      res.innerHTML = `${g}^${x} mod ${p} = <strong style="color:var(--accent2)">${target}</strong>
+<span class="comment">// Log_${g}(${target}) mod ${p} = ${x}</span>`;
+      return;
+    }
+  }
+}
+
+function calcDLP() {
+  const x = parseInt(document.getElementById('dlpX').value);
+  const p = 23, g = 5;
+  if (isNaN(x) || x < 1 || x > 22) { alert('1 dan 22 gacha qiymat kiriting'); return; }
+  const result = Number(modPow(BigInt(g), BigInt(x), BigInt(p)));
+  const dots = document.querySelectorAll('.num-dot');
+  dots.forEach((d, i) => {
+    d.className = 'num-dot ' + ((i+1) === g ? 'base' : 'normal');
+    if (i+1 === result) d.className = 'num-dot result';
+  });
+  const res = document.getElementById('dlpResult');
+  res.style.display = 'block';
+  res.innerHTML = `${g}^${x} mod ${p} = <strong style="color:var(--accent2)">${result}</strong>
+<span class="comment">// ${x}-chi daraja mod ${p} = ${result}</span>`;
+}
+
+// ===== ANIMATION =====
+let animFrame = null;
+function animateProtocol() {
+  const canvas = document.getElementById('dh-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 700, H = 300;
+  const p = parseInt(document.getElementById('simP').value) || 23;
+  const g = parseInt(document.getElementById('simG').value) || 5;
+  const a = parseInt(document.getElementById('simA').value) || 6;
+  const b = parseInt(document.getElementById('simB').value) || 15;
+  const A = Number(modPow(BigInt(g), BigInt(a), BigInt(p)));
+  const B = Number(modPow(BigInt(g), BigInt(b), BigInt(p)));
+  const K = Number(modPow(BigInt(B), BigInt(a), BigInt(p)));
+
+  let t = 0;
+  if (animFrame) cancelAnimationFrame(animFrame);
+
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    // Background
+    ctx.fillStyle = 'rgba(5,10,18,0.95)';
+    ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(0,180,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    const alice = {x:100,y:150}, bob = {x:W-100,y:150};
+    function drawP(x,y,color,label) {
+      ctx.beginPath(); ctx.arc(x,y,30,0,Math.PI*2);
+      ctx.fillStyle=color+'22'; ctx.fill();
+      ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle=color; ctx.font='bold 13px IBM Plex Sans';
+      ctx.textAlign='center'; ctx.fillText(label,x,y+5);
+    }
+    drawP(alice.x,alice.y,'#4fc3f7','Alisa');
+    drawP(bob.x,bob.y,'#a5d6a7','Bob');
+
+    // Phase animations
+    const phase = Math.floor(t / 80);
+    const prog = (t % 80) / 80;
+
+    // Phase 0: show params
+    ctx.fillStyle='rgba(0,180,255,0.8)'; ctx.font='11px JetBrains Mono';
+    ctx.textAlign='center'; ctx.fillText(`p=${p}, g=${g}`, W/2, 24);
+
+    // Phase 1: Alice sends A
+    if (phase >= 1) {
+      const px = phase === 1 ? alice.x + (W/2 - alice.x) * Math.min(prog*2,1) : W/2;
+      const py = phase === 1 ? alice.y + (80 - alice.y) * Math.min(prog*2,1) : 80;
+      ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2);
+      ctx.fillStyle='#00b4ff'; ctx.fill();
+      ctx.fillStyle='#00b4ff'; ctx.font='11px JetBrains Mono';
+      ctx.textAlign='center'; ctx.fillText(`A=${A}`, px, py-14);
+    }
+
+    // Phase 2: Bob sends B
+    if (phase >= 2) {
+      const px = phase === 2 ? bob.x + (W/2 - bob.x) * Math.min(prog*2,1) : W/2;
+      const py = phase === 2 ? bob.y + (H-70 - bob.y) * Math.min(prog*2,1) : H-70;
+      ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2);
+      ctx.fillStyle='#a5d6a7'; ctx.fill();
+      ctx.fillStyle='#a5d6a7'; ctx.font='11px JetBrains Mono';
+      ctx.textAlign='center'; ctx.fillText(`B=${B}`, px, py-14);
+    }
+
+    // Phase 3: show key
+    if (phase >= 3) {
+      const scale = Math.min(prog * 2, 1);
+      ctx.save(); ctx.translate(W/2, H/2); ctx.scale(scale, scale);
+      ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,213,79,0.2)'; ctx.fill();
+      ctx.strokeStyle='#ffd54f'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#ffd54f'; ctx.font='bold 11px JetBrains Mono';
+      ctx.textAlign='center'; ctx.fillText(`K=${K}`, 0, 4);
+      ctx.restore();
+    }
+
+    t++;
+    if (t < 320) animFrame = requestAnimationFrame(frame);
+    else drawCanvas(p,g,a,b,A,B,K);
+  }
+  frame();
+}
+
+// ===== QUIZ =====
+const questions = [
+  {
+    q: "Diffie-Hellman protokolida qaysi matematik muammo xavfsizlikni ta'minlaydi?",
+    opts: ["Tub sonlarni topish", "Diskret logarifm muammosi", "Elliptik egri tenglamalar", "RSA faktorizatsiyasi"],
+    ans: 1,
+    exp: "To'g'ri! DH xavfsizligi diskret logarifm muammosiga (DLP) asoslangan: g^a mod p ni bilganda 'a' ni topish juda qiyin."
+  },
+  {
+    q: "p = 23, g = 5, a = 6 bo'lsa, Alisa ning ochiq kaliti A qancha?",
+    opts: ["A = 8", "A = 12", "A = 3", "A = 15"],
+    ans: 0,
+    exp: "A = 5^6 mod 23 = 15625 mod 23 = 8. To'g'ri!"
+  },
+  {
+    q: "DH protokolida Eva (tajovuzkor) ochiq kanalda nimani ko'radi?",
+    opts: ["Faqat p va g", "p, g, A va B", "Maxfiy kalit K ni ham", "Hech narsani"],
+    ans: 1,
+    exp: "Eva p, g, A va B ni ko'radi — bular ochiq kanalda uzatiladi. Lekin maxfiy kalit K va sir kalitlar a, b hech qachon uzatilmaydi."
+  },
+  {
+    q: "Nima uchun DH da ikkala tomon bir xil K ga keladi?",
+    opts: ["Tasodif", "(g^b)^a = g^(ab) = (g^a)^b matematik tenglik", "Maxfiy kanal bor", "Bir xil tasodifiy son ishlatiladi"],
+    ans: 1,
+    exp: "Darajalar kommutativ: (g^a)^b = g^(ab) = (g^b)^a. Shuning uchun ikkalasi ham g^(ab) mod p = K ni oladi."
+  },
+  {
+    q: "Sof DH ning asosiy kamchiligi nima?",
+    opts: ["Juda sekin", "Autentifikatsiya yo'q — MITM hujumiga zaif", "Faqat bir marta ishlatiladi", "Matematik xatolari bor"],
+    ans: 1,
+    exp: "Sof DH autentifikatsiya ta'minlamaydi. O'rta odam (MITM) hujumida Eva ikki tomon o'rtasiga kirib, alohida kalitlar o'rnatishi mumkin."
+  },
+  {
+    q: "Zamonaviy tavsiya qilingan parametr o'lchami qancha?",
+    opts: ["512 bit", "1024 bit", "2048 bit yoki ko'proq", "256 bit"],
+    ans: 2,
+    exp: "Hozirgi standart — kamida 2048 bit p. Optimal variant ECDH-256 (elliptik egri) bo'lib, 128 bit xavfsizlikni ta'minlaydi."
+  },
+  {
+    q: "DH protokoli qayerda keng qo'llaniladi?",
+    opts: ["Faqat elektron pochtada", "TLS/HTTPS, SSH, VPN (IPsec), Signal", "Faqat harbiy tizimlar", "Faqat bank tizimlari"],
+    ans: 1,
+    exp: "DH (yoki ECDH) TLS/HTTPS, SSH, IPsec/VPN, Signal va WhatsApp kabi ko'plab protokollarda kalit almashinuvi uchun ishlatiladi."
+  }
+];
+
+let currentQ = 0, score = 0, answered = [];
+
+function renderQuiz() {
+  if (currentQ >= questions.length) {
+    showScore();
+    return;
+  }
+  const q = questions[currentQ];
+  const pct = (currentQ / questions.length * 100).toFixed(0);
+  document.getElementById('quizProgress').style.width = pct + '%';
+
+  document.getElementById('quizContent').innerHTML = `
+    <div class="card animate-in">
+      <div class="quiz-num">SAVOL ${currentQ+1} / ${questions.length}</div>
+      <div class="quiz-question">${q.q}</div>
+      ${q.opts.map((o,i) => `<button class="quiz-option" onclick="answerQ(${i})" id="opt${i}">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}
+      <div class="quiz-feedback" id="qFeedback"></div>
+    </div>`;
+}
+
+function answerQ(idx) {
+  const q = questions[currentQ];
+  const opts = document.querySelectorAll('.quiz-option');
+  opts.forEach(o => o.disabled = true);
+  opts[idx].classList.add(idx === q.ans ? 'correct' : 'wrong');
+  if (idx !== q.ans) opts[q.ans].classList.add('correct');
+  const fb = document.getElementById('qFeedback');
+  fb.className = 'quiz-feedback show ' + (idx === q.ans ? 'correct-fb' : 'wrong-fb');
+  fb.innerHTML = (idx === q.ans ? '✅ ' : '❌ ') + q.exp;
+  if (idx === q.ans) score++;
+  setTimeout(() => {
+    currentQ++;
+    renderQuiz();
+  }, 2500);
+}
+
+function showScore() {
+  document.getElementById('quizContainer').style.display = 'none';
+  const sd = document.getElementById('quizScore');
+  sd.style.display = 'block';
+  document.getElementById('scoreNum').textContent = `${score}/${questions.length}`;
+  const pct = score / questions.length;
+  let msg, detail;
+  if (pct >= 0.85) { msg = '🏆 A\'lo! Mukammal natija!'; detail = 'DH protokolini zo\'r o\'zlashtirdingiz!'; }
+  else if (pct >= 0.7) { msg = '✅ Yaxshi natija!'; detail = 'Asosiy tushunchalar yaxshi o\'zlashtirilgan.'; }
+  else if (pct >= 0.5) { msg = '📖 O\'rtacha'; detail = 'Nazariya bo\'limini qayta ko\'rib chiqing.'; }
+  else { msg = '📚 Davom eting!'; detail = 'Tushunmovchi mavzularni qayta o\'rganing.'; }
+  document.getElementById('scoreMsg').textContent = msg;
+  document.getElementById('scoreDetail').textContent = detail;
+}
+
+function restartQuiz() {
+  currentQ = 0; score = 0;
+  document.getElementById('quizContainer').style.display = 'block';
+  document.getElementById('quizScore').style.display = 'none';
+  renderQuiz();
+}
+
+// ===== INIT =====
+buildNumLine();
+renderQuiz();
+setTimeout(drawCanvas, 200);
+</script>
+</body>
+</html>
